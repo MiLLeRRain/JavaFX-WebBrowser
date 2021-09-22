@@ -4,9 +4,7 @@ import javafx.application.Application;
 import javafx.collections.ObservableList;
 import javafx.scene.web.WebHistory;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.ListIterator;
 
 /**
@@ -56,15 +54,7 @@ public class HistoryBookMarkUtils {
         WebHistory.Entry entry;
         while (it.hasPrevious()) {
             entry = it.previous();
-            if (!entry.getTitle().equals("$HISTORY$") && !entry.getTitle().equals("New Tab")) { // Do not show history of HISTORY page
-                historyBuilder.append(PART1);
-                historyBuilder.append(entry.getUrl());
-                historyBuilder.append(PART2);
-                historyBuilder.append(entry.getTitle()).append(" | ").append(entry.getLastVisitedDate());
-                historyBuilder.append(PART3);
-                historyBuilder.append(entry.getUrl());
-                historyBuilder.append(PART4);
-            }
+            writing(entry, historyBuilder);
         }
 
         historyBuilder.append(END);
@@ -101,8 +91,9 @@ public class HistoryBookMarkUtils {
      * Helper to delete the bookmark file
      * @param fileToDelete is the bookmark file needs to be deleted
      */
-    public static void deleteBookMark(File fileToDelete) {
-        if (fileToDelete.exists()) fileToDelete.delete();
+    public static boolean deleteBookMark(File fileToDelete) {
+        if (fileToDelete.exists()) return fileToDelete.delete();
+        return false;
     }
 
     /**
@@ -111,9 +102,34 @@ public class HistoryBookMarkUtils {
      * @throws IOException
      */
     public static void newHelper(WebHistory.Entry entry) throws IOException {
-
+        /* Build up the new record */
         StringBuilder historyBuilder = new StringBuilder(HEADING_1 + mTitle + HEADING_2);
+        writing(entry, historyBuilder);
+        historyBuilder.append(END);
 
+        /* Prepare the new File and FileInputStream */
+        File historyWebPage = new File(FILENAME);
+        FileInputStream in = new FileInputStream(historyWebPage);
+
+        /* Append the old histories record to the new build one history */
+        BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+        StringBuilder historyRecord = new StringBuilder(reader.readLine());
+        historyRecord.insert(0, historyBuilder);
+
+        /* Start up the FileWrite */
+        FileWriter historyWriter = null;
+        try {
+            //noinspection IOResourceOpenedButNotSafelyClosed
+            historyWriter = new FileWriter(historyWebPage, false);
+            historyWriter.write(historyRecord.toString());
+        } catch (IOException e) {
+            System.out.println("Unable to write history page to disk" + e);
+        }
+        if (historyWriter == null) throw new AssertionError();
+        historyWriter.close();
+    }
+
+    private static void writing(WebHistory.Entry entry, StringBuilder historyBuilder) {
         if (!entry.getTitle().equals("$HISTORY$") && !entry.getTitle().equals("New Tab")) {
             historyBuilder.append(PART1);
             historyBuilder.append(entry.getUrl());
@@ -123,21 +139,6 @@ public class HistoryBookMarkUtils {
             historyBuilder.append(entry.getUrl());
             historyBuilder.append(PART4);
         }
-
-        historyBuilder.append(END);
-
-        File historyWebPage = new File(FILENAME);
-        FileWriter historyWriter = null;
-
-        try {
-            //noinspection IOResourceOpenedButNotSafelyClosed
-            historyWriter = new FileWriter(historyWebPage, true);
-            historyWriter.write(historyBuilder.toString());
-        } catch (IOException e) {
-            System.out.println("Unable to write history page to disk" + e);
-        }
-        assert historyWriter != null;
-        historyWriter.close();
     }
 
 }

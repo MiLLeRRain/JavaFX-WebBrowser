@@ -39,39 +39,59 @@ import static LovelyUtils.UrlUtils.*;
  */
 public class TabWindow extends Tab {
 
-    /** Start Page of each new tab */
+    /**
+     * Start Page of each new tab
+     */
     private String defaultURL;
     private final TextField urlField = new TextField();
 
-    /** Own webview */
+    /**
+     * Own webview
+     */
     private WebView webView;
     private WebEngine engine;
 
-    /** Web History */
+    /**
+     * Web History
+     */
     private WebHistory history;
     private ObservableList<WebHistory.Entry> historyEntries;
 
-    /** Might be useful fields */
+    /**
+     * Might be useful fields
+     */
     private static String tabTitle;
 
-    /** Containers */
+    /**
+     * Containers
+     */
     VBox tabHolder;
     HBox ctrlBar;
 
-    /** Reload button */
+    /**
+     * Reload button
+     */
     Button reload = new Button("\u21BB");
 
-    /** Bookmark menu */
+    /**
+     * Bookmark menu
+     */
     private MenuButton favMenu;
     private Button addFav;
 
-    /** File directory of bookmarks */
+    /**
+     * File directory of bookmarks
+     */
     private final File BOOKMARK_DIR = new File("./src/favPage/");
 
-    /** Ctrl key boolean for Zoom */
+    /**
+     * Ctrl key boolean for Zoom
+     */
     private boolean ctrlDown = false;
 
-    /** For blank tab */
+    /**
+     * For blank tab
+     */
     public TabWindow(int ID) throws FileNotFoundException, ParseException {
         // 1 Start engine
         File newTab = new File("NewTab.html");
@@ -79,15 +99,16 @@ public class TabWindow extends Tab {
         this.webView = initWebView();
         // 2 Build UI
         initTabUI();
-        this.setId(""+ID);
+        this.setId("" + ID);
         // 3 Set up the events handlers
         eventsHandlerSetup();
     }
 
     /**
      * For first load of HomePage
+     *
      * @param initUrl is the HomePage url
-     * @param ID is the Tab ID, would be useful when dragging tabs around
+     * @param ID      is the Tab ID, would be useful when dragging tabs around
      * @throws FileNotFoundException
      * @throws ParseException
      */
@@ -97,13 +118,14 @@ public class TabWindow extends Tab {
         this.webView = initWebView();
         // 2 Build UI
         initTabUI();
-        this.setId(""+ID);
+        this.setId("" + ID);
         // 3 Set up the events handlers
         eventsHandlerSetup();
     }
 
     /**
      * Initialize the WebView and return
+     *
      * @return a WebView with defaultURL (can be HomePage(ID 1) or blank(ID > 1))
      */
     private WebView initWebView() {
@@ -119,6 +141,7 @@ public class TabWindow extends Tab {
 
     /**
      * Only initialize the UI part, tabHolder is the root, contains ctrl bar and WebView
+     *
      * @throws FileNotFoundException
      * @throws ParseException
      */
@@ -158,8 +181,7 @@ public class TabWindow extends Tab {
                     Platform.runLater(loadWorker::cancel);
                     engine.load(null);
                 }
-            }
-            else loadUrl();
+            } else loadUrl();
         });
         ButtonBar.setButtonData(backward, ButtonBar.ButtonData.BACK_PREVIOUS);
         ButtonBar.setButtonData(forward, ButtonBar.ButtonData.NEXT_FORWARD);
@@ -196,11 +218,11 @@ public class TabWindow extends Tab {
                     updateFavMenu(); // write to dir then call updateFavMenu TODO if return false, delete from BM
                     addFav.setText("\u2605");
                     popUpAlert("Bookmarked this web site!");
-                }
-                else {
-                    deleteBookMark();
-                    addFav.setText("\u2606");
-                    popUpAlert("Un-Bookmarked this web site!");
+                } else {
+                    if (deleteBookMark()) {
+                        addFav.setText("\u2606");
+                        popUpAlert("Un-Bookmarked this web site!");
+                    }
                 }
             } catch (IOException | ParseException e) {
                 e.printStackTrace();
@@ -257,8 +279,7 @@ public class TabWindow extends Tab {
                     updateFavMenuIcon();
                     /* For update tab text graphic */
                     loadFavicon(engine.getLocation());
-                }
-                else if (newV == Worker.State.RUNNING) reload.setText("\u2715");
+                } else if (newV == Worker.State.RUNNING) reload.setText("\u2715");
             }
         });
 
@@ -357,14 +378,17 @@ public class TabWindow extends Tab {
                     @Override
                     public void run() {
                         try {
-                            HistoryBookMarkUtils.newHelper(historyEntries.get(history.getCurrentIndex()));
+                            WebHistory.Entry operating = historyEntries.get(history.getCurrentIndex());
+                            if (!operating.getTitle().equals("$HISTORY$")) {
+                                HistoryBookMarkUtils.newHelper(operating);
+                            }
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
                     }
                 };
                 try {
-                    Thread.sleep(5000);
+                    Thread.sleep(8000);
                 } catch (InterruptedException ex) {
                     System.out.println(ex);
                 }
@@ -387,7 +411,9 @@ public class TabWindow extends Tab {
         title = fixFileName(title);
 
         File newFav = new File("./src/favPage/" + title);
-        if (newFav.exists()) {return false;}
+        if (newFav.exists()) {
+            return false;
+        }
         newFav.createNewFile();
 
         String[] list = BOOKMARK_DIR.list();
@@ -414,7 +440,9 @@ public class TabWindow extends Tab {
         return true;
     }
 
-    /** Do a filter on forbidden characters for file name */
+    /**
+     * Do a filter on forbidden characters for file name
+     */
     private String fixFileName(String title) {
         Matcher fileNameMatcher = fileNamePattern.matcher(title);
         title = fileNameMatcher.replaceAll("");
@@ -431,16 +459,19 @@ public class TabWindow extends Tab {
         for (String s : list) {
             File favToAdd = new File("./src/favPage/" + s);
             MenuItem mi = makeMenuItem(favToAdd);
-            if (!favMenu.getItems().contains(mi)) favMenu.getItems().add(mi);
+            if (!favMenu.getItems().contains(mi)) {
+                favMenu.getItems().add(mi);
+            }
         }
     }
 
     /**
      * Delete the bookmark
+     *
      * @throws FileNotFoundException
      * @throws ParseException
      */
-    public void deleteBookMark() throws FileNotFoundException, ParseException {
+    public boolean deleteBookMark() throws FileNotFoundException, ParseException {
         String[] list = BOOKMARK_DIR.list();
         int ID = list.length;
         String title = engine.getTitle();
@@ -457,11 +488,16 @@ public class TabWindow extends Tab {
             }
         }
 
-        if (toDelete != null) HistoryBookMarkUtils.deleteBookMark(toDelete);
+        if (toDelete != null) {
+            return HistoryBookMarkUtils.deleteBookMark(toDelete);
+        }
+
+        return false;
     }
 
     /**
      * Make a WebAddress extends MenuItem and return.
+     *
      * @param fav is the File to make add, maybe already exist or new
      * @return a MenuItem to add into the bookmark MenuButton
      * @throws ParseException
@@ -532,6 +568,7 @@ public class TabWindow extends Tab {
     /**
      * Steal from stackoverflow:
      * https://stackoverflow.com/questions/27691381/javafx-get-favicon-with-web-browser/35327398
+     *
      * @param location is current engine location
      */
     private void loadFavicon(String location) {
