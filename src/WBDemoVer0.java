@@ -1,6 +1,6 @@
 import LovelyUtils.UrlUtils;
 import LovelyUtils.WebAddress;
-import LovelyUtils.HistoryPageBuilder;
+import LovelyUtils.HistoryBookMarkUtils;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -28,7 +28,6 @@ import java.io.*;
 import java.text.ParseException;
 import java.util.Scanner;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static LovelyUtils.UrlUtils.*;
 
@@ -415,7 +414,7 @@ public class WBDemoVer0 extends Application {
             /*
               Helper class to write all history entries into a html file.
              */
-            if (HistoryPageBuilder.helper(historyEntries)) engine.load(f.toURI().toString());
+            if (HistoryBookMarkUtils.helper(historyEntries)) engine.load(f.toURI().toString());
         } catch (IOException e) {
             e.printStackTrace();
         }

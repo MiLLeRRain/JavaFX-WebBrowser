@@ -14,7 +14,7 @@ import java.util.ListIterator;
  *
  * https://www.javatips.net/api/Lightning-Browser-master/app/src/main/java/acr/browser/lightning/constant/HistoryPage.java
  */
-public class HistoryPageBuilder {
+public class HistoryBookMarkUtils {
 
     public static final String FILENAME = "hist.html";
 
@@ -36,10 +36,11 @@ public class HistoryPageBuilder {
 
     private String mHistoryUrl = null;
 
-    private HistoryPageBuilder() {
+    private HistoryBookMarkUtils() {
     }
 
     /**
+     * !No append writing!
      * Helper method to create a history.html file, from latest to beginning of this engine
      * @param historyEntries is history entries
      * @return is a boolean if the file is created
@@ -59,7 +60,7 @@ public class HistoryPageBuilder {
                 historyBuilder.append(PART1);
                 historyBuilder.append(entry.getUrl());
                 historyBuilder.append(PART2);
-                historyBuilder.append(entry.getTitle()).append(" | " + entry.getLastVisitedDate());
+                historyBuilder.append(entry.getTitle()).append(" | ").append(entry.getLastVisitedDate());
                 historyBuilder.append(PART3);
                 historyBuilder.append(entry.getUrl());
                 historyBuilder.append(PART4);
@@ -69,7 +70,7 @@ public class HistoryPageBuilder {
         historyBuilder.append(END);
 
         File historyWebPage = new File(FILENAME);
-        FileWriter historyWriter = null;
+        FileWriter historyWriter;
         try {
             //noinspection IOResourceOpenedButNotSafelyClosed
             historyWriter = new FileWriter(historyWebPage, false);
@@ -97,6 +98,14 @@ public class HistoryPageBuilder {
     }
 
     /**
+     * Helper to delete the bookmark file
+     * @param fileToDelete is the bookmark file needs to be deleted
+     */
+    public static void deleteBookMark(File fileToDelete) {
+        if (fileToDelete.exists()) fileToDelete.delete();
+    }
+
+    /**
      * Append writing the history html file, from furthest to latest.
      * @param entry is the current WebHistory.Entry which triggered this call.
      * @throws IOException
@@ -109,7 +118,7 @@ public class HistoryPageBuilder {
             historyBuilder.append(PART1);
             historyBuilder.append(entry.getUrl());
             historyBuilder.append(PART2);
-            historyBuilder.append(entry.getTitle()).append(" | " + entry.getLastVisitedDate());
+            historyBuilder.append(entry.getTitle()).append(" | ").append(entry.getLastVisitedDate());
             historyBuilder.append(PART3);
             historyBuilder.append(entry.getUrl());
             historyBuilder.append(PART4);
@@ -127,6 +136,7 @@ public class HistoryPageBuilder {
         } catch (IOException e) {
             System.out.println("Unable to write history page to disk" + e);
         }
+        assert historyWriter != null;
         historyWriter.close();
     }
 

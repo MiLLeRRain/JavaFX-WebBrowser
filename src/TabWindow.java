@@ -1,4 +1,4 @@
-import LovelyUtils.HistoryPageBuilder;
+import LovelyUtils.HistoryBookMarkUtils;
 import LovelyUtils.UrlUtils;
 import LovelyUtils.WebAddress;
 import javafx.application.Platform;
@@ -39,60 +39,39 @@ import static LovelyUtils.UrlUtils.*;
  */
 public class TabWindow extends Tab {
 
-    /**
-     * Start Page of each new tab
-     */
+    /** Start Page of each new tab */
     private String defaultURL;
-    final TextField urlField = new TextField();
+    private final TextField urlField = new TextField();
 
-    /**
-     * Own webview
-     */
+    /** Own webview */
     private WebView webView;
     private WebEngine engine;
 
-    /**
-     * Web History
-     */
+    /** Web History */
     private WebHistory history;
     private ObservableList<WebHistory.Entry> historyEntries;
 
-    /**
-     * Might be useful fields
-     */
-    static private String tabTitle;
+    /** Might be useful fields */
+    private static String tabTitle;
 
-    /**
-     * Containers
-     */
+    /** Containers */
     VBox tabHolder;
     HBox ctrlBar;
 
-    /**
-     * Buttons those shall be updated
-     */
     /** Reload button */
     Button reload = new Button("\u21BB");
-    /**
-     * Bookmark menu
-     */
+
+    /** Bookmark menu */
     private MenuButton favMenu;
     private Button addFav;
 
-    /**
-     * Database
-     */
     /** File directory of bookmarks */
     private final File BOOKMARK_DIR = new File("./src/favPage/");
 
-    /**
-     * Ctrl key boolean for Zoom
-     */
+    /** Ctrl key boolean for Zoom */
     private boolean ctrlDown = false;
 
-    /**
-     * For blank tab
-     */
+    /** For blank tab */
     public TabWindow(int ID) throws FileNotFoundException, ParseException {
         // 1 Start engine
         File newTab = new File("NewTab.html");
@@ -105,6 +84,13 @@ public class TabWindow extends Tab {
         eventsHandlerSetup();
     }
 
+    /**
+     * For first load of HomePage
+     * @param initUrl is the HomePage url
+     * @param ID is the Tab ID, would be useful when dragging tabs around
+     * @throws FileNotFoundException
+     * @throws ParseException
+     */
     public TabWindow(String initUrl, int ID) throws FileNotFoundException, ParseException {
         // 1 Start engine and initialize the WebView
         this.defaultURL = initUrl;
@@ -199,7 +185,7 @@ public class TabWindow extends Tab {
         featureBox.setPrefSize(150, 30);
         Button showHistory = new Button("\u231A");
         showHistory.setTooltip(new Tooltip("Show history"));
-        showHistory.setOnAction(a -> historyPage()); // TODO update
+        showHistory.setOnAction(a -> showHistory()); // TODO updated but failed by engine loading problem
 
         /* Button for add to favorite */
         addFav = new Button("\u2606"); // Add the current page to fav file and update the fav menu
@@ -209,7 +195,12 @@ public class TabWindow extends Tab {
                 if (addToFav()) {
                     updateFavMenu(); // write to dir then call updateFavMenu TODO if return false, delete from BM
                     addFav.setText("\u2605");
-                    popUpAlert();
+                    popUpAlert("Bookmarked this web site!");
+                }
+                else {
+                    deleteBookMark();
+                    addFav.setText("\u2606");
+                    popUpAlert("Un-Bookmarked this web site!");
                 }
             } catch (IOException | ParseException e) {
                 e.printStackTrace();
@@ -266,7 +257,6 @@ public class TabWindow extends Tab {
                     updateFavMenuIcon();
                     /* For update tab text graphic */
                     loadFavicon(engine.getLocation());
-                    System.out.println(historyEntries.size());
                 }
                 else if (newV == Worker.State.RUNNING) reload.setText("\u2715");
             }
@@ -310,6 +300,7 @@ public class TabWindow extends Tab {
             }
         });
 
+        /* This is an approach I want, but this listener is not synced with the loading thread of engine */
         historyEntries.addListener(new ListChangeListener<WebHistory.Entry>() {
             @Override
             public void onChanged(Change<? extends WebHistory.Entry> change) {
@@ -347,22 +338,26 @@ public class TabWindow extends Tab {
     /**
      * Write to historyPage file
      */
-    private void historyPage() {
+    private void showHistory() {
+
         try {
-           File f = new File("hist.html");
-            /* Helper class to write all history entries into a html file. */
-            if (HistoryPageBuilder.helper(historyEntries)) engine.load(f.toURI().toString());
+            File f = new File("hist.html");
+            /* Helper class to write all history entries into a html file */
+            if (HistoryBookMarkUtils.helper(historyEntries)) engine.load(f.toURI().toString());
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        /* Better approach rests in peace here */
+//        File f = new File("hist.html");
+//        engine.load(f.toURI().toString());
     }
 
     /**
      * Write to hist.html right away after the change to WebHistory.Entry was detected.
      */
     private void writeHistory() throws IOException {
-        File f = new File("hist.html");
-        HistoryPageBuilder.newHelper(historyEntries.get(history.getCurrentIndex()));
+//        HistoryPageBuilder.newHelper(historyEntries.get(history.getCurrentIndex()));
     }
 
     /**
@@ -424,6 +419,31 @@ public class TabWindow extends Tab {
     }
 
     /**
+     * Delete the bookmark
+     * @throws FileNotFoundException
+     * @throws ParseException
+     */
+    public void deleteBookMark() throws FileNotFoundException, ParseException {
+        String[] list = BOOKMARK_DIR.list();
+        int ID = list.length;
+        String title = engine.getTitle();
+        title = fixFileName(title);
+        File toDelete = null;
+
+        for (String s : list) {
+            File favToAdd = new File("./src/favPage/" + s);
+            MenuItem mi = makeMenuItem(favToAdd);
+            if (favToAdd.getPath().equals("./src/favPage/" + title)) {
+                favMenu.getItems().remove(mi);
+                toDelete = favToAdd;
+                break;
+            }
+        }
+
+        if (toDelete != null) HistoryBookMarkUtils.deleteBookMark(toDelete);
+    }
+
+    /**
      * Make a WebAddress extends MenuItem and return.
      * @param fav is the File to make add, maybe already exist or new
      * @return a MenuItem to add into the bookmark MenuButton
@@ -448,13 +468,13 @@ public class TabWindow extends Tab {
     }
 
     /**
-     * Popup Dialog to notice user if a bookmark has been successfully added.
+     * Popup Dialog to notice user if a bookmark has been added/removed.
      */
-    private void popUpAlert() {
+    private void popUpAlert(String s) {
         Dialog<ButtonType> bookmarkNotice = new Dialog<>();
         bookmarkNotice.getDialogPane().getButtonTypes().add(ButtonType.OK);
 
-        bookmarkNotice.setContentText("Bookmarked this web site!");
+        bookmarkNotice.setContentText(s);
 
         Button ok = (Button) bookmarkNotice.getDialogPane().lookupButton(ButtonType.OK);
         ok.setOnAction(new EventHandler<ActionEvent>() {
