@@ -155,7 +155,7 @@ public class TabWindow extends Tab {
             if (engine.getLoadWorker().stateProperty().equals(Worker.State.RUNNING)) {
                 Worker<Void> loadWorker = engine.getLoadWorker();
                 if (loadWorker != null) {
-                    Platform.runLater(() -> loadWorker.cancel());
+                    Platform.runLater(loadWorker::cancel);
                     engine.load(null);
                 }
             }
@@ -300,7 +300,7 @@ public class TabWindow extends Tab {
             }
         });
 
-        /* This is an approach I want, but this listener is not synced with the loading thread of engine */
+        /* Write the Entry to file while detected change */
         historyEntries.addListener(new ListChangeListener<WebHistory.Entry>() {
             @Override
             public void onChanged(Change<? extends WebHistory.Entry> change) {
@@ -339,25 +339,42 @@ public class TabWindow extends Tab {
      * Write to historyPage file
      */
     private void showHistory() {
-
-        try {
-            File f = new File("hist.html");
-            /* Helper class to write all history entries into a html file */
-            if (HistoryBookMarkUtils.helper(historyEntries)) engine.load(f.toURI().toString());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         /* Better approach rests in peace here */
-//        File f = new File("hist.html");
-//        engine.load(f.toURI().toString());
+        File f = new File("hist.html");
+        engine.load(f.toURI().toString());
     }
 
     /**
      * Write to hist.html right away after the change to WebHistory.Entry was detected.
+     * Found a piece of code can delay the thread so the WebHistory.Entry can be fully updated.
      */
     private void writeHistory() throws IOException {
-//        HistoryPageBuilder.newHelper(historyEntries.get(history.getCurrentIndex()));
+        // longrunning operation runs on different thread
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Runnable updater = new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            HistoryBookMarkUtils.newHelper(historyEntries.get(history.getCurrentIndex()));
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                };
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException ex) {
+                    System.out.println(ex);
+                }
+                // UI update is run on the Application thread
+                Platform.runLater(updater);
+            }
+        });
+        // don't let thread prevent JVM shutdown
+        thread.setDaemon(true);
+        thread.start();
     }
 
     /**
