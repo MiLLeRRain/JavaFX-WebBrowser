@@ -1,7 +1,7 @@
 Finished feature:
 
 1 Url input:
-    No http:// or https://
+    No need http:// or https://
     Accept top level Domain https://data.iana.org/TLD/tlds-alpha-by-domain.txt
     Or IP address 142.250.67.14
     else bring up google search

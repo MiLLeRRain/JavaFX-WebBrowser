@@ -189,14 +189,15 @@ public class TabWindow extends Tab {
         forward.setOnAction(a -> goForward());
         backward.setOnAction(a -> goBackward());
         reload.setOnAction(a -> {
-            if (loadThread.isAlive()) {
-//                Worker<Void> loadWorker = engine.getLoadWorker();
-//                if (loadWorker != null) {
-//                    Platform.runLater(loadWorker::cancel);
-//                    engine.load(null);
-//                }
-                loadThread.interrupt();
-            } else loadUrl();
+//            if (loadThread.isAlive()) {
+                Worker<Void> loadWorker = engine.getLoadWorker();
+                if (loadWorker != null) {
+                    Platform.runLater(loadWorker::cancel);
+                    loadUrl();
+                }
+//                loadThread.interrupt();
+//            }
+            else loadUrl();
         });
         ButtonBar.setButtonData(backward, ButtonBar.ButtonData.BACK_PREVIOUS);
         ButtonBar.setButtonData(forward, ButtonBar.ButtonData.NEXT_FORWARD);
@@ -293,7 +294,7 @@ public class TabWindow extends Tab {
                     /* For update the bookmark icon */
                     updateFavMenuIcon();
                     /* For update tab text graphic */
-                    loadFavicon(engine.getLocation());
+                    loadTabIcon(engine.getLocation());
                 } else if (newV == Worker.State.RUNNING) reload.setText("\u2715");
             }
         });
@@ -393,7 +394,7 @@ public class TabWindow extends Tab {
      * Found a piece of code can delay the thread so the WebHistory.Entry can be fully updated.
      */
     private void writeHistory() throws IOException {
-        // longrunning operation runs on different thread
+        // long running operation runs on different thread
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -589,7 +590,7 @@ public class TabWindow extends Tab {
      *
      * @param location is current engine location
      */
-    private void loadFavicon(String location) {
+    private void loadTabIcon(String location) {
         try {
             String faviconUrl = String.format("http://www.google.com/s2/favicons?domain_url=%s", URLEncoder.encode(location, "UTF-8"));
             Image favicon = new Image(faviconUrl, true);
