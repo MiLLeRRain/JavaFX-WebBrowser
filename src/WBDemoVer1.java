@@ -81,7 +81,7 @@ public class WBDemoVer1 extends Application {
 
     /**
      * Build the adder tab
-     * @return a tab with adder button TODO use CSS to get rid of border
+     * @return a tab with adder button
      */
     private Tab buildAdder() {
         Button adderBtn = new Button("\u002B");
@@ -91,7 +91,7 @@ public class WBDemoVer1 extends Application {
 
         Tab toReturn = new Tab();
         toReturn.setGraphic(adderBtn);
-//        toReturn.setStyle(".tab {-fx-pref-width: 250}"); // TODO ???? css how to change header width
+//        toReturn.setStyle(".tab {-fx-pref-width: 250}"); // TODO ???? css how to change header bg color
         toReturn.setClosable(false); // Not closable
         toReturn.setDisable(true);
 

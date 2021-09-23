@@ -90,6 +90,11 @@ public class TabWindow extends Tab {
     private boolean ctrlDown = false;
 
     /**
+     * Manipulate the Thread
+     */
+    private Thread loadThread;
+
+    /**
      * For blank tab
      */
     public TabWindow(int ID) throws FileNotFoundException, ParseException {
@@ -130,6 +135,9 @@ public class TabWindow extends Tab {
      */
     private WebView initWebView() {
         WebView toReturn = new WebView();
+
+        toReturn.setStyle("-fx-context-menu-enabled: false");
+
         engine = toReturn.getEngine();
         engine.load(defaultURL);
 
@@ -163,10 +171,16 @@ public class TabWindow extends Tab {
         this.setContent(tabHolder);
     }
 
+    /**
+     * Set up the Control panel
+     * @return a HBox holding all user interacting elements
+     * @throws FileNotFoundException
+     * @throws ParseException
+     */
     private HBox setCtrlBar() throws FileNotFoundException, ParseException {
         HBox toReturn = new HBox(10);
         toReturn.prefWidthProperty().bind(tabHolder.prefWidthProperty());
-        toReturn.setStyle("-fx-background-color: rgba(31, 31, 60, 1);"); // TODO can update theme here
+        if (Math.random() < 0.5) toReturn.setStyle("-fx-background-color: rgba(225, 245, 254, 1);"); // TODO can update theme here
 
         ButtonBar naviBar = new ButtonBar();
         Button backward = new Button("\u21E0");
@@ -175,12 +189,13 @@ public class TabWindow extends Tab {
         forward.setOnAction(a -> goForward());
         backward.setOnAction(a -> goBackward());
         reload.setOnAction(a -> {
-            if (engine.getLoadWorker().stateProperty().equals(Worker.State.RUNNING)) {
-                Worker<Void> loadWorker = engine.getLoadWorker();
-                if (loadWorker != null) {
-                    Platform.runLater(loadWorker::cancel);
-                    engine.load(null);
-                }
+            if (loadThread.isAlive()) {
+//                Worker<Void> loadWorker = engine.getLoadWorker();
+//                if (loadWorker != null) {
+//                    Platform.runLater(loadWorker::cancel);
+//                    engine.load(null);
+//                }
+                loadThread.interrupt();
             } else loadUrl();
         });
         ButtonBar.setButtonData(backward, ButtonBar.ButtonData.BACK_PREVIOUS);
@@ -273,7 +288,7 @@ public class TabWindow extends Tab {
                     /* For set tab title later */
                     tabTitle = engine.getTitle();
                     initTabUrlText();
-                    WBDemoVer1.setupTitle(engine.getTitle()); // TODO check
+                    WBDemoVer1.setupTitle(engine.getTitle());
                     reload.setText("\u21BB");
                     /* For update the bookmark icon */
                     updateFavMenuIcon();
@@ -289,6 +304,14 @@ public class TabWindow extends Tab {
         urlField.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent actionEvent) {
+//                loadThread = new Thread(() -> {
+//                    Thread.yield();
+//                    loadUrl();
+//                    if (Thread.currentThread().isInterrupted()) {
+//                        engine.load(null);
+//                    }
+//                });
+//                loadThread.start();
                 loadUrl();
             }
         });
@@ -553,14 +576,9 @@ public class TabWindow extends Tab {
      * Printing method, don't know how to get it work TODO check
      */
     private void printPage(final Node webView) {
-//        PageLayout pageLayout = Printer.getDefaultPrinter().createPageLayout(Paper.NA_LETTER, PageOrientation.PORTRAIT, Printer.MarginType.DEFAULT);
-//        double scaleX = pageLayout.getPrintableWidth() / webView.getBoundsInParent().getWidth();
-//        double scaleY = pageLayout.getPrintableHeight() / webView.getBoundsInParent().getHeight();
-//        webView.getTransforms().add(new Scale(scaleX, scaleY));
-
         PrinterJob job = PrinterJob.createPrinterJob();
         if (job != null) {
-            engine.print(job);
+            job.printPage(webView);
             job.endJob();
         }
     }

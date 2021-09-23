@@ -1,25 +1,32 @@
-需要可以任意拖动
+Finished feature:
 
-前进 后退 收藏 其他功能
+1 Url input:
+    No http:// or https://
+    Accept top level Domain https://data.iana.org/TLD/tlds-alpha-by-domain.txt
+    Or IP address 142.250.67.14
+    else bring up google search
 
-正则表达式判断是直接打开还是输入
+2 Forword Backward Reload
 
-加载新的地址
+3 Instant update after engine loading begins:
+    Reload icon
+    Stage title
+    Tab icon and title
+    Bookmark icon
+    History record after 8000 ms thread delay, by Platform.runlater()
 
-设置标题栏为当前访问页面的标题。
+4 Bookmark add / remove
+    update data in file directory
 
-修改输入栏的地址，也就是访问那个网站，这个地址栏显示那个网站的地址
+5 History store for all tabs and show history record page
 
-空白页背景图
+6 Add new tab by NewTab.html
 
-带搜索框
 
-带建议网站
+Problem still exist:
 
-新tab 新window
+1. Can not invoke the thread while engine loading is running. How to mark and stop the Thread here?
 
-print
+2. Dont have time for theme change. I didn't find a css style can set on tab header either.
 
-收藏
-
-首页
+3. Printer not working, because of linux?
